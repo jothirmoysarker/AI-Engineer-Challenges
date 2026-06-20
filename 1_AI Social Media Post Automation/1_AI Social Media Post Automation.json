@@ -1,0 +1,1679 @@
+{
+  "name": "AI Social Media Post Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "New social media post request",
+        "formDescription": "Submit a topic and a scheduled publish time. The post copy, brand card image, and approval routing are all handled automatically after this.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Post Topic",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Scheduled Date/Time",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Target Platforms",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Facebook"
+                  },
+                  {
+                    "option": "Instagram"
+                  },
+                  {
+                    "option": "Both"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4732f090-fe68-4cbc-a186-9f3047189b33",
+      "name": "Input Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -2192,
+        112
+      ],
+      "webhookId": "7398955d-33e3-403a-99b1-8e16a791474a",
+      "notes": "Replace with a Webhook node if you want a non-form trigger (e.g. from an internal tool or a Telegram bot)."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "topic",
+              "type": "string",
+              "value": "={{ $json['Post Topic'] }}"
+            },
+            {
+              "id": "a2",
+              "name": "scheduledAt",
+              "type": "string",
+              "value": "={{ $json['Scheduled Date/Time'] }}"
+            },
+            {
+              "id": "a3",
+              "name": "platforms",
+              "type": "string",
+              "value": "={{ $json['Target Platforms'] }}"
+            },
+            {
+              "id": "a4",
+              "name": "retryCount",
+              "type": "number",
+              "value": 0
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3c67ed2-0fda-42c7-b065-000d5b6383f4",
+      "name": "Normalize Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2016,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst caption = (response.text || '').trim();\nconst wordCount = caption.split(/\\s+/).filter(Boolean).length;\n\nconst topic = $('Normalize Input').first().json.topic;\nconst scheduledAt = $('Normalize Input').first().json.scheduledAt;\nconst platforms = $('Normalize Input').first().json.platforms;\n\nlet retryCount = 1;\ntry {\n  retryCount = ($('Check Word Count').first().json.retryCount || 0) + 1;\n} catch (e) {\n  retryCount = 1;\n}\n\nconst isValid = wordCount >= 90 && wordCount <= 150;\n\nreturn [{\n  json: {\n    topic,\n    scheduledAt,\n    platforms,\n    caption,\n    wordCount,\n    isValid,\n    retryCount,\n    proceedToImage: isValid || retryCount >= 3\n  }\n}];"
+      },
+      "id": "53a0f564-0d55-48a0-8eec-5be711207256",
+      "name": "Check Word Count",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1504,
+        112
+      ],
+      "notes": "proceedToImage is true once the caption is in range, OR after 3 attempts (so a stubborn topic never loops forever). Tighten or loosen that cap as you like."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.proceedToImage }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4cb66cda-d4ac-441a-97ac-43fd31b253c5",
+      "name": "Word Count Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Topic: \"{{ $json.topic }}\"\n\nNow write exactly one social media caption about the given topic between 90 and 150 words.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a brand social media copywriter. Write exactly one social media caption about the given topic. STRICT REQUIREMENT: the total word count must be between 90 and 150 words inclusive, count carefully before responding. Return ONLY the caption text, no preamble, no labels, no surrounding quotation marks."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1808,
+        112
+      ],
+      "id": "603f59b2-bd23-4523-96cc-f99a8a57f27c",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        304
+      ],
+      "id": "7f9be8fa-da57-4727-8868-0bd9efd7fc1c",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Fn4VRethyszJ6PCA",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"nano-banana-2\",\n    \"callBackUrl\": \"https://your-domain.com/api/callback\",\n    \"input\": {\n        \"prompt\": \"{{ $json.caption }}. Picture given is the brand logo, it must be seamlessly placed in the top-right corner. title (A Fat Cat) must be clearly positioned in the lower-middle part of the image.\",\n        \"image_input\": [\"https://upload.wikimedia.org/wikipedia/commons/d/d9/N8n_logo.png?_=20210707053626\"],\n        \"aspect_ratio\": \"9:16\",\n        \"resolution\": \"1K\",\n        \"output_format\": \"png\"\n    }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1040,
+        96
+      ],
+      "id": "0dda9422-b6ce-45ca-bc7b-904c555b6852",
+      "name": "Create a Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pj6Nmv2mRUfJkUkC",
+          "name": "Kie AI BBS"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -800,
+        96
+      ],
+      "id": "19dffe38-e6ae-42e2-badc-1986c9d86034",
+      "name": "Wait",
+      "webhookId": "385f9ca1-2942-4a4d-a6b5-5442ecce926e"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "1a63397a-5de4-44e0-bd55-e1f32c6df51e",
+      "name": "Get Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pj6Nmv2mRUfJkUkC",
+          "name": "Kie AI BBS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "145ceaa9-6d9e-4d41-bc02-2bc0f27331f1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6b44b134-91e5-4a97-a972-c9e2e2ef3e2f",
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Not Approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8369a6fb-e178-4bac-8428-409cbc80438a",
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Retry"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        48
+      ],
+      "id": "68999de0-2bd4-40a7-9c37-2ba4d04769bd",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "text": "=Post about \"{{ $('Check Word Count').item.json.topic }}\" has been published to Facebook (mock) and Instagram (mock).",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "316c1a66-2d1f-46c4-968a-af51f2de927f",
+      "name": "Notify Success1",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        144
+      ],
+      "webhookId": "b58549f6-4351-4d12-adfd-b94c4d5f4422",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.site/2c93e3d5-89a4-4766-b655-5d3120a8d714",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  message: $json.caption,\n  url: $json.imageUrl,\n  scheduled_publish_time: Math.floor(new Date($json.scheduledAt).getTime() / 1000),\n  published: false\n}) }}",
+        "options": {}
+      },
+      "id": "b2aaaddb-bfb1-497d-b768-94618f989e58",
+      "name": "Publish to Facebook (Mock)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        80
+      ],
+      "notes": "Payload shape mirrors the real Facebook Graph API POST /{page-id}/photos call, so swapping this URL for the live endpoint later is a one-line change."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.site/2c93e3d5-89a4-4766-b655-5d3120a8d714",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ image_url: $json.imageUrl, caption: $json.caption }) }}",
+        "options": {}
+      },
+      "id": "e4201dcd-74e6-434c-8d2c-11024afde928",
+      "name": "Publish to Instagram (Mock)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        544,
+        240
+      ],
+      "notes": "Mirrors the first step of the real Instagram Graph API flow (POST /{ig-user-id}/media). The real flow needs a second /media_publish call with the returned creation_id - add that as a follow-up HTTP Request node once you point this at the live API."
+    },
+    {
+      "parameters": {},
+      "id": "b32e03ad-4d1e-4810-b894-8bbf80208ef3",
+      "name": "Join Publish Results1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        800,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "message": "=This is the Image Url: {{ $json.image_url }}\nThis is the DFescription: {{ $json.image_caption }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        32,
+        64
+      ],
+      "id": "f40a6d14-39b2-4eda-a691-96075dceb7f3",
+      "name": "Request Human Approval1",
+      "webhookId": "310c433c-3123-4d03-957d-b0d6edb2de64",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "text": "The Kie AI failed! \n\nFor more details check Kie AI Logs at \"https://kie.ai/logs\"\n",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -176,
+        256
+      ],
+      "id": "e2ff4a63-7f83-48bf-bce9-913550946234",
+      "name": "Error message",
+      "webhookId": "4a59a209-262a-4f12-a335-4b75e2d27344",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ccd5655-79c9-4460-9d6d-a606e1115e20",
+              "name": "image_url",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "c9745e5e-9a2c-467d-8131-b6d989694ec9",
+              "name": "image_caption",
+              "value": "={{ $('Basic LLM Chain').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -192,
+        64
+      ],
+      "id": "a5d534cb-48dd-4465-bf5e-0849a3c3a0ba",
+      "name": "Normalize Output"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "968be3b5-2f97-4294-854d-4ef8ac877457"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Success"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ca5a54ee-60da-4955-adc2-9019bf725ed0",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "waiting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generating"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "542933da-2c4d-46aa-bfe6-9444b76cf06d",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        80
+      ],
+      "id": "627d3c7c-7131-4b12-96c7-229990e3c60f",
+      "name": "Image Done?"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "message": "=If you want to edit the image press Approved if you want to retry the full process then press Decline.",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -1024,
+        592
+      ],
+      "id": "f0864ff7-f6e7-43c9-87ff-42c36ee40c40",
+      "name": "Request Human Approval2",
+      "webhookId": "310c433c-3123-4d03-957d-b0d6edb2de64",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "bbaba519-fd33-4433-940c-fd1d8dd64efc"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Edit"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "87941ac2-b092-4cc0-951d-3cbca938ee59",
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Retry the Picture only"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -832,
+        592
+      ],
+      "id": "bbaa98ef-48e4-476f-901c-f9bcf8c62e36",
+      "name": "Switch"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        576
+      ],
+      "id": "0f155140-1a9f-4f36-8e89-d32e85cb37f3",
+      "name": "Wait1",
+      "webhookId": "385f9ca1-2942-4a4d-a6b5-5442ecce926e"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "text": "The Kie AI failed! \n\nFor more details check Kie AI Logs at \"https://kie.ai/logs\"\n",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        480,
+        768
+      ],
+      "id": "aa502407-1420-4d09-99fc-59a9a6eba2ff",
+      "name": "Error message1",
+      "webhookId": "4a59a209-262a-4f12-a335-4b75e2d27344",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ccd5655-79c9-4460-9d6d-a606e1115e20",
+              "name": "image_url",
+              "value": "={{ JSON.parse($json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "c9745e5e-9a2c-467d-8131-b6d989694ec9",
+              "name": "image_caption",
+              "value": "={{ $('Basic LLM Chain').item.json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        544
+      ],
+      "id": "5af5c45f-64e3-40d4-92f4-75d4d3098c3f",
+      "name": "Normalize Output1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "success",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "968be3b5-2f97-4294-854d-4ef8ac877457"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Success"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ca5a54ee-60da-4955-adc2-9019bf725ed0",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "waiting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Generating"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "542933da-2c4d-46aa-bfe6-9444b76cf06d",
+                    "leftValue": "={{ $json.data.state }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        560
+      ],
+      "id": "1a4e18a6-57a5-4795-9519-f26c29f635a3",
+      "name": "Image Done?1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"model\": \"google/nano-banana-edit\",\n    \"callBackUrl\": \"https://your-domain.com/api/callback\",\n    \"input\": {\n        \"prompt\": \"{{ $json.data.text }}\",\n        \"image_urls\": [\n            \"{{ $('Normalize Output').item.json.image_url }}\"\n        ],\n        \"output_format\": \"png\",\n        \"aspect_ratio\": \"9:16\"\n    }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -368,
+        576
+      ],
+      "id": "20672103-d784-405c-8874-7f6bdcfaedec",
+      "name": "Edit a Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pj6Nmv2mRUfJkUkC",
+          "name": "Kie AI BBS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "message": "=Write what you want to edit in the form.",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -592,
+        576
+      ],
+      "id": "4a6d95af-7457-4c6f-a2b5-6d6c55f94c4b",
+      "name": "Request Human Approval3",
+      "webhookId": "310c433c-3123-4d03-957d-b0d6edb2de64",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        32,
+        576
+      ],
+      "id": "fb563681-1e94-4a60-9761-7d041fd370f3",
+      "name": "Get edited Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pj6Nmv2mRUfJkUkC",
+          "name": "Kie AI BBS"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "##  Generate a social media post description",
+        "height": 432,
+        "width": 1168
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2272,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "c9261d95-9565-4892-8fa7-d8fac6cccecb",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "##  Generate a social media post image",
+        "height": 432,
+        "width": 1456,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "b6878abd-f458-4979-ba88-b7adb10a31ab",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "##  Mock post Upload",
+        "height": 432,
+        "width": 848,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        416,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "a855866e-e7dd-446c-8da2-89a4ab56c099",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "##  Edit image",
+        "height": 464,
+        "width": 1744,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "dca5df31-8a0d-49a5-8694-e52ae4dddd31",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "text": "=Post about \"{{ $('Check Word Count').item.json.topic }}\" has been published to Facebook (mock) and Instagram (mock).",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "3b579e49-4826-41c3-b35f-dd16a9f6b639",
+      "name": "Notify Success2",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        576
+      ],
+      "webhookId": "b58549f6-4351-4d12-adfd-b94c4d5f4422",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.site/2c93e3d5-89a4-4766-b655-5d3120a8d714",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  message: $json.caption,\n  url: $json.imageUrl,\n  scheduled_publish_time: Math.floor(new Date($json.scheduledAt).getTime() / 1000),\n  published: false\n}) }}",
+        "options": {}
+      },
+      "id": "3ea1c699-5349-40f6-98db-23b882da8ec0",
+      "name": "Publish to Facebook (Mock)2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        512
+      ],
+      "notes": "Payload shape mirrors the real Facebook Graph API POST /{page-id}/photos call, so swapping this URL for the live endpoint later is a one-line change."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://webhook.site/2c93e3d5-89a4-4766-b655-5d3120a8d714",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ image_url: $json.imageUrl, caption: $json.caption }) }}",
+        "options": {}
+      },
+      "id": "aebd3db0-06cd-491e-8ade-2e8539f6e086",
+      "name": "Publish to Instagram (Mock)2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        672
+      ],
+      "notes": "Mirrors the first step of the real Instagram Graph API flow (POST /{ig-user-id}/media). The real flow needs a second /media_publish call with the returned creation_id - add that as a follow-up HTTP Request node once you point this at the live API."
+    },
+    {
+      "parameters": {},
+      "id": "aacc1eab-a4b7-49fe-9c97-88fe3f0c8dbe",
+      "name": "Join Publish Results2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1488,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "145ceaa9-6d9e-4d41-bc02-2bc0f27331f1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6b44b134-91e5-4a97-a972-c9e2e2ef3e2f",
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Not Approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8369a6fb-e178-4bac-8428-409cbc80438a",
+                    "leftValue": "={{ $json.data.approved }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Retry"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        528
+      ],
+      "id": "c1a79efa-8795-4fbc-8cd3-649dac9329a1",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BB6FRB63B",
+          "mode": "list",
+          "cachedResultName": "all-bbsaiautomation"
+        },
+        "message": "=This is the Image Url: {{ $json.image_url }}\nThis is the DFescription: {{ $json.image_caption }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        720,
+        544
+      ],
+      "id": "68c8e1ad-bc65-4bdc-8e57-a9cee3d70e6b",
+      "name": "Request Human Approval4",
+      "webhookId": "310c433c-3123-4d03-957d-b0d6edb2de64",
+      "credentials": {
+        "slackApi": {
+          "id": "PxQdgHoFoHmt7GD6",
+          "name": "BBS Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "##  Mock post Upload",
+        "height": 464,
+        "width": 1200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        704,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "dd38491c-f8f7-4a7d-a29b-1541ae16bddf",
+      "name": "Sticky Note4"
+    }
+  ],
+  "pinData": {
+    "Create a Image": [
+      {
+        "json": {
+          "code": 200,
+          "msg": "success",
+          "data": {
+            "taskId": "0da10dd5ce388cf6c55019efacbd36f7",
+            "recordId": "0da10dd5ce388cf6c55019efacbd36f7"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Edit a Image": [
+      {
+        "json": {
+          "code": 200,
+          "msg": "success",
+          "data": {
+            "taskId": "84fa7c4ac793873a7f5ac13e2b7f8069",
+            "recordId": "84fa7c4ac793873a7f5ac13e2b7f8069"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Input Form": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Word Count": {
+      "main": [
+        [
+          {
+            "node": "Word Count Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Word Count Valid?": {
+      "main": [
+        [
+          {
+            "node": "Create a Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Check Word Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a Image": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image": {
+      "main": [
+        [
+          {
+            "node": "Image Done?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Publish to Facebook (Mock)1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Publish to Instagram (Mock)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Human Approval2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Human Approval1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Facebook (Mock)1": {
+      "main": [
+        [
+          {
+            "node": "Join Publish Results1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Instagram (Mock)1": {
+      "main": [
+        [
+          {
+            "node": "Join Publish Results1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Join Publish Results1": {
+      "main": [
+        [
+          {
+            "node": "Notify Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Human Approval1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Output": {
+      "main": [
+        [
+          {
+            "node": "Request Human Approval1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Done?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Human Approval2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Request Human Approval3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Get edited Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Done?1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Output1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit a Image": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Human Approval3": {
+      "main": [
+        [
+          {
+            "node": "Edit a Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get edited Image": {
+      "main": [
+        [
+          {
+            "node": "Image Done?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Output1": {
+      "main": [
+        [
+          {
+            "node": "Request Human Approval4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Facebook (Mock)2": {
+      "main": [
+        [
+          {
+            "node": "Join Publish Results2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Instagram (Mock)2": {
+      "main": [
+        [
+          {
+            "node": "Join Publish Results2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Join Publish Results2": {
+      "main": [
+        [
+          {
+            "node": "Notify Success2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Publish to Facebook (Mock)2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Publish to Instagram (Mock)2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Human Approval2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Human Approval4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Human Approval4": {
+      "main": [
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c3430a6e-23c7-44d8-a609-4b992ca5493a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bc27856ba2aba29fa9498de31c28c2d8ce2dcf03154d7abd887ace7fa87a0a80"
+  },
+  "id": "1Heu8OdEVBSd6GQY",
+  "tags": []
+}
