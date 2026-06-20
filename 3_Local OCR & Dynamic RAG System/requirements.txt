@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pymupdf>=1.25.0
+pytesseract
+Pillow
+langdetect
+sentence-transformers
+chromadb
+ollama
+pydantic>=2.0
