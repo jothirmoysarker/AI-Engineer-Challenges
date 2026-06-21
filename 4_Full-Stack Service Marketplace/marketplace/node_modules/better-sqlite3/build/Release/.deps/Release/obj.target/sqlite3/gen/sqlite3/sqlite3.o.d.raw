@@ -1,0 +1,2 @@
+Release/obj.target/sqlite3/gen/sqlite3/sqlite3.o: \
+ Release/obj/gen/sqlite3/sqlite3.c

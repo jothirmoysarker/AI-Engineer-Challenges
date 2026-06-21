@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ServeHub — Multi-Vendor Service Marketplace</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --primary-light: #e0e7ff;
+    --accent: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,.08);
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.6; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { cursor: pointer; font-family: inherit; }
+
+  /* Layout */
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+  main { flex: 1; padding: 0 0 60px; }
+
+  /* Nav */
+  nav {
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 24px; height: 64px;
+  }
+  .nav-logo { font-size: 1.4rem; font-weight: 700; color: var(--primary); flex-shrink: 0; cursor: pointer; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 4px; flex: 1; }
+  .nav-link {
+    padding: 8px 14px; border-radius: 8px; font-size: .9rem; font-weight: 500;
+    color: var(--gray-700); transition: background .15s;
+    background: none; border: none;
+  }
+  .nav-link:hover, .nav-link.active { background: var(--primary-light); color: var(--primary); }
+  .nav-actions { display: flex; gap: 8px; align-items: center; }
+  .role-badge {
+    padding: 3px 10px; border-radius: 99px; font-size: .75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .role-badge.admin  { background: #fef3c7; color: #92400e; }
+  .role-badge.vendor { background: #d1fae5; color: #065f46; }
+  .role-badge.user   { background: var(--primary-light); color: var(--primary-dark); }
+
+  /* Buttons */
+  .btn {
+    padding: 9px 20px; border-radius: 8px; font-size: .9rem; font-weight: 600;
+    border: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary   { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-outline   { background: white; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary-light); }
+  .btn-success   { background: var(--success); color: white; }
+  .btn-success:hover { filter: brightness(.9); }
+  .btn-danger    { background: var(--danger); color: white; }
+  .btn-danger:hover { filter: brightness(.9); }
+  .btn-ghost     { background: none; color: var(--gray-700); border: 1.5px solid var(--gray-200); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-sm        { padding: 5px 12px; font-size: .8rem; border-radius: 6px; }
+  .btn:disabled  { opacity: .5; cursor: not-allowed; }
+
+  /* Cards */
+  .card {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); border: 1px solid var(--gray-100);
+    overflow: hidden;
+  }
+  .card-body { padding: 20px; }
+
+  /* Sections */
+  .section { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+  .section-sub   { color: var(--gray-500); margin-bottom: 24px; }
+
+  /* Grid */
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    color: white; padding: 72px 24px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
+  .hero p  { font-size: 1.15rem; opacity: .9; max-width: 600px; margin: 0 auto 32px; }
+  .hero-search {
+    display: flex; gap: 8px; max-width: 560px; margin: 0 auto;
+    background: white; border-radius: 12px; padding: 6px; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+  }
+  .hero-search input {
+    flex: 1; border: none; outline: none; padding: 10px 16px;
+    font-size: 1rem; color: var(--gray-900); border-radius: 8px;
+  }
+
+  /* Service card */
+  .service-card { cursor: pointer; transition: transform .15s, box-shadow .15s; }
+  .service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .service-card .svc-thumb {
+    height: 120px; background: linear-gradient(135deg, var(--primary-light), #ddd6fe);
+    display: flex; align-items: center; justify-content: center; font-size: 3rem;
+  }
+  .service-card .svc-body { padding: 16px; }
+  .service-card .svc-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+  .service-card .svc-vendor { font-size: .82rem; color: var(--gray-500); margin-bottom: 8px; }
+  .service-card .svc-meta { display: flex; align-items: center; justify-content: space-between; }
+  .svc-price { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+  .svc-rating { font-size: .82rem; color: var(--warning); display: flex; align-items: center; gap: 2px; }
+  .verified-badge { font-size: .7rem; background: var(--success); color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+
+  /* Category card */
+  .cat-card {
+    background: white; border-radius: var(--radius); padding: 24px 16px;
+    text-align: center; cursor: pointer; transition: all .15s;
+    border: 2px solid transparent; box-shadow: var(--shadow-sm);
+  }
+  .cat-card:hover, .cat-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .cat-card .cat-icon { font-size: 2.2rem; margin-bottom: 8px; }
+  .cat-card .cat-name { font-weight: 600; font-size: .9rem; }
+  .cat-card .cat-count { font-size: .78rem; color: var(--gray-500); }
+
+  /* Auth forms */
+  .auth-wrap { max-width: 440px; margin: 60px auto; padding: 0 24px; }
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 6px; color: var(--gray-700); }
+  .form-control {
+    width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: .95rem; outline: none; transition: border .15s;
+    background: white;
+  }
+  .form-control:focus { border-color: var(--primary); }
+  select.form-control { appearance: auto; }
+  .form-error { color: var(--danger); font-size: .82rem; margin-top: 4px; }
+  .form-hint  { color: var(--gray-500); font-size: .82rem; margin-top: 4px; }
+
+  /* Alert */
+  .alert {
+    padding: 12px 16px; border-radius: 8px; font-size: .9rem; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+  .alert-danger  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .alert-info    { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+  .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th { background: var(--gray-50); font-weight: 600; padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--gray-200); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* Status pills */
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .75rem; font-weight: 600;
+  }
+  .pill-pending     { background: #fef3c7; color: #92400e; }
+  .pill-confirmed   { background: #dbeafe; color: #1e40af; }
+  .pill-in_progress { background: #e0f2fe; color: #0369a1; }
+  .pill-completed   { background: #d1fae5; color: #065f46; }
+  .pill-cancelled   { background: #fee2e2; color: #991b1b; }
+  .pill-paid        { background: #d1fae5; color: #065f46; }
+  .pill-unpaid      { background: #fef3c7; color: #92400e; }
+
+  /* Dashboard layout */
+  .dash-grid { display: grid; grid-template-columns: 220px 1fr; gap: 24px; max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .dash-sidebar { display: flex; flex-direction: column; gap: 4px; }
+  .dash-nav-item {
+    padding: 10px 14px; border-radius: 8px; font-size: .9rem; font-weight: 500;
+    color: var(--gray-700); cursor: pointer; background: none; border: none; text-align: left; transition: all .15s;
+  }
+  .dash-nav-item:hover, .dash-nav-item.active { background: var(--primary-light); color: var(--primary); }
+  .dash-content { min-width: 0; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: var(--radius); padding: 20px; border: 1px solid var(--gray-100); }
+  .stat-label { font-size: .8rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .stat-value { font-size: 2rem; font-weight: 800; color: var(--primary); margin-top: 4px; }
+  .stat-sub   { font-size: .8rem; color: var(--gray-500); }
+
+  /* Service detail */
+  .detail-wrap { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+  .detail-thumb {
+    height: 260px; border-radius: var(--radius); margin-bottom: 24px;
+    background: linear-gradient(135deg, var(--primary-light), #ddd6fe);
+    display: flex; align-items: center; justify-content: center; font-size: 6rem;
+  }
+  .detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .detail-title  { font-size: 1.8rem; font-weight: 800; }
+  .detail-price  { font-size: 1.8rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
+
+  /* Checkout */
+  .checkout-grid { display: grid; grid-template-columns: 1fr 360px; gap: 24px; max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+  .checkout-summary { position: sticky; top: 80px; }
+  .card-input-row { display: flex; gap: 12px; }
+  .card-input-row .form-group { flex: 1; }
+
+  /* Sandbox banner */
+  .sandbox-banner {
+    background: linear-gradient(90deg, #fef3c7, #fde68a);
+    border: 1px solid #f59e0b;
+    border-radius: 8px; padding: 10px 16px; margin-bottom: 20px;
+    font-size: .85rem; color: #92400e; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast-item {
+    background: var(--gray-900); color: white; padding: 12px 18px;
+    border-radius: 10px; font-size: .88rem; box-shadow: var(--shadow);
+    animation: slideIn .25s ease; min-width: 220px; max-width: 340px;
+  }
+  .toast-item.success { background: var(--success); }
+  .toast-item.error   { background: var(--danger); }
+  @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal {
+    background: white; border-radius: var(--radius); padding: 28px;
+    max-width: 520px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+
+  /* Search bar */
+  .search-bar { display: flex; gap: 8px; margin-bottom: 24px; }
+  .search-bar input { flex: 1; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-row select { padding: 8px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: .9rem; background: white; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 60px 24px; color: var(--gray-500); }
+  .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty p { margin-bottom: 16px; }
+
+  /* Loading */
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .6s linear infinite; }
+  .spinner.dark { border-color: rgba(0,0,0,.1); border-top-color: var(--primary); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Breadcrumb */
+  .breadcrumb { font-size: .85rem; color: var(--gray-500); margin-bottom: 20px; }
+  .breadcrumb span { cursor: pointer; }
+  .breadcrumb span:hover { color: var(--primary); }
+
+  /* Vendor profile strip */
+  .vendor-strip {
+    background: white; border: 1px solid var(--gray-100); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 20px; display: flex; gap: 16px; align-items: flex-start;
+  }
+  .vendor-avatar {
+    width: 56px; height: 56px; border-radius: 12px;
+    background: var(--primary-light); display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 800; color: var(--primary); flex-shrink: 0;
+  }
+  .star-row { color: var(--warning); }
+
+  /* Payment success animation */
+  .payment-success { text-align: center; padding: 40px; }
+  .payment-success .checkmark { font-size: 4rem; margin-bottom: 12px; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2rem; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .checkout-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-logo" onclick="route('/')">Serve<span>Hub</span></div>
+      <div class="nav-links" id="navLinks"></div>
+      <div class="nav-actions" id="navActions"></div>
+    </div>
+  </nav>
+  <main id="main"></main>
+  <div id="toast"></div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const state = {
+  token: localStorage.getItem('token'),
+  user:  JSON.parse(localStorage.getItem('user') || 'null'),
+  cart:  null,   // { service, quantity }
+};
+
+// ── API ───────────────────────────────────────────────────────────────────────
+const API = '/api';
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (state.token) opts.headers['Authorization'] = 'Bearer ' + state.token;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Request failed'), { status: res.status, data });
+  return data;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'default', duration = 3000) {
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── Router ────────────────────────────────────────────────────────────────────
+const routes = {};
+function route(path, push = true) {
+  if (push) history.pushState({}, '', path);
+  const [base, ...rest] = path.slice(1).split('/');
+  const handler = routes[base || 'home'] || routes['404'];
+  if (handler) handler(rest.join('/'));
+  renderNav();
+}
+window.addEventListener('popstate', () => route(location.pathname, false));
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+function renderNav() {
+  const links = document.getElementById('navLinks');
+  const actions = document.getElementById('navActions');
+  const path = location.pathname;
+
+  const navItems = [
+    { label: '🏠 Home',     href: '/' },
+    { label: '🔍 Browse',   href: '/browse' },
+  ];
+
+  links.innerHTML = navItems.map(n =>
+    `<button class="nav-link ${path === n.href ? 'active' : ''}" onclick="route('${n.href}')">${n.label}</button>`
+  ).join('');
+
+  if (state.user) {
+    const roleBadge = `<span class="role-badge ${state.user.role}">${state.user.role}</span>`;
+    let dashBtn = '';
+    if (state.user.role === 'admin')  dashBtn = `<button class="nav-link" onclick="route('/admin')">⚙️ Admin</button>`;
+    if (state.user.role === 'vendor') dashBtn = `<button class="nav-link" onclick="route('/vendor')">📊 Dashboard</button>`;
+    if (state.user.role === 'user')   dashBtn = `<button class="nav-link" onclick="route('/dashboard')">👤 My Account</button>`;
+    links.innerHTML += dashBtn;
+
+    actions.innerHTML = `
+      ${roleBadge}
+      <span style="font-size:.9rem;color:var(--gray-700);font-weight:500">${state.user.full_name.split(' ')[0]}</span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign Out</button>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button class="btn btn-outline btn-sm" onclick="route('/login')">Sign In</button>
+      <button class="btn btn-primary btn-sm" onclick="route('/register')">Register</button>
+    `;
+  }
+}
+
+function logout() {
+  state.token = null; state.user = null; state.cart = null;
+  localStorage.removeItem('token'); localStorage.removeItem('user');
+  toast('Signed out'); route('/');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function gbp(n) { return `£${Number(n).toFixed(2)}`; }
+function stars(r) { return '★'.repeat(Math.round(r)) + '☆'.repeat(5 - Math.round(r)); }
+function ago(dt) {
+  const diff = Date.now() - new Date(dt).getTime();
+  const d = Math.floor(diff / 86400000);
+  if (d === 0) return 'Today'; if (d === 1) return 'Yesterday'; return `${d}d ago`;
+}
+function statusPill(s) { return `<span class="pill pill-${s}">${s.replace('_',' ')}</span>`; }
+function setMain(html) { document.getElementById('main').innerHTML = html; }
+function reqAuth(role) {
+  if (!state.user) { route('/login'); return false; }
+  if (role && state.user.role !== role && state.user.role !== 'admin') {
+    toast('Access denied', 'error'); route('/'); return false;
+  }
+  return true;
+}
+
+// ── Home ─────────────────────────────────────────────────────────────────────
+routes['home'] = routes[''] = async () => {
+  setMain(`<div class="hero">
+    <h1>Find Trusted Local Services</h1>
+    <p>Book vetted professionals for home, tech, wellness & more — with instant pricing and mock-payment checkout.</p>
+    <div class="hero-search">
+      <input id="heroSearch" type="text" placeholder="e.g. home cleaning, plumber, laptop repair…" onkeydown="if(event.key==='Enter')browseSearch()">
+      <button class="btn btn-primary" onclick="browseSearch()">🔍 Search</button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Browse Categories</div>
+    <div class="section-sub">Choose a category to explore available services</div>
+    <div id="catGrid" class="grid-4"><div class="spinner dark" style="margin:40px auto"></div></div>
+  </div>
+  <div class="section" style="background:white;border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-top:8px">
+    <div class="section-title">Top Services</div>
+    <div class="section-sub">Highest-rated services across all categories</div>
+    <div id="featuredGrid" class="grid-3"><div class="spinner dark" style="margin:40px auto"></div></div>
+  </div>
+  <div class="section" style="padding-top:48px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;text-align:center">
+      <div><div style="font-size:2.5rem;font-weight:800;color:var(--primary)">500+</div><div style="color:var(--gray-500)">Services Listed</div></div>
+      <div><div style="font-size:2.5rem;font-weight:800;color:var(--primary)">200+</div><div style="color:var(--gray-500)">Verified Vendors</div></div>
+      <div><div style="font-size:2.5rem;font-weight:800;color:var(--primary)">10k+</div><div style="color:var(--gray-500)">Happy Customers</div></div>
+      <div><div style="font-size:2.5rem;font-weight:800;color:var(--primary)">4.8★</div><div style="color:var(--gray-500)">Average Rating</div></div>
+    </div>
+  </div>`);
+
+  const [cats, svcs] = await Promise.all([
+    api('GET', '/categories'),
+    api('GET', '/services?min_price=0')
+  ]);
+
+  document.getElementById('catGrid').innerHTML = cats.map(c => `
+    <div class="cat-card" onclick="route('/browse?cat=${c.id}')">
+      <div class="cat-icon">${c.icon}</div>
+      <div class="cat-name">${c.name}</div>
+      <div class="cat-count">${c.service_count} service${c.service_count !== 1 ? 's' : ''}</div>
+    </div>`).join('');
+
+  document.getElementById('featuredGrid').innerHTML = svcs.slice(0, 6).map(svcCard).join('');
+};
+
+window.browseSearch = () => {
+  const q = document.getElementById('heroSearch')?.value || '';
+  route('/browse' + (q ? `?q=${encodeURIComponent(q)}` : ''));
+};
+
+// ── Browse ────────────────────────────────────────────────────────────────────
+routes['browse'] = async () => {
+  const params = new URLSearchParams(location.search);
+  setMain(`<div class="section">
+    <div class="section-title">Browse Services</div>
+    <div class="search-bar">
+      <input id="searchQ" class="form-control" placeholder="Search services, vendors…" value="${params.get('q') || ''}">
+      <button class="btn btn-primary" onclick="applyFilters()">Search</button>
+    </div>
+    <div class="filter-row">
+      <select id="filterCat" class="form-control" style="width:auto">
+        <option value="">All Categories</option>
+      </select>
+      <select id="filterSort" class="form-control" style="width:auto">
+        <option value="">Sort: Recommended</option>
+        <option value="price_asc">Price: Low → High</option>
+        <option value="price_desc">Price: High → Low</option>
+      </select>
+    </div>
+    <div id="browseGrid" class="grid-3"><div class="spinner dark" style="margin:40px auto"></div></div>
+  </div>`);
+
+  const cats = await api('GET', '/categories');
+  const catSel = document.getElementById('filterCat');
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = `${c.icon} ${c.name}`;
+    if (String(c.id) === params.get('cat')) o.selected = true;
+    catSel.appendChild(o);
+  });
+
+  catSel.addEventListener('change', applyFilters);
+  document.getElementById('filterSort').addEventListener('change', applyFilters);
+  document.getElementById('searchQ').addEventListener('keydown', e => { if (e.key === 'Enter') applyFilters(); });
+
+  await applyFilters();
+};
+
+window.applyFilters = async () => {
+  const q    = document.getElementById('searchQ')?.value || '';
+  const cat  = document.getElementById('filterCat')?.value || '';
+  const sort = document.getElementById('filterSort')?.value || '';
+  let url = '/services?x=1';
+  if (q)   url += `&search=${encodeURIComponent(q)}`;
+  if (cat) url += `&category_id=${cat}`;
+  const svcs = await api('GET', url);
+
+  let sorted = [...svcs];
+  if (sort === 'price_asc')  sorted.sort((a,b) => a.price - b.price);
+  if (sort === 'price_desc') sorted.sort((a,b) => b.price - a.price);
+
+  const grid = document.getElementById('browseGrid');
+  if (!grid) return;
+  if (!sorted.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No services found. Try a different search.</p></div>`;
+    return;
+  }
+  grid.innerHTML = sorted.map(svcCard).join('');
+};
+
+function svcCard(s) {
+  return `<div class="card service-card" onclick="route('/service/${s.id}')">
+    <div class="svc-thumb">${s.category_icon || '🔧'}</div>
+    <div class="svc-body">
+      <div class="svc-name">${s.name}</div>
+      <div class="svc-vendor">${s.business_name} · ${s.city || ''}${s.is_verified ? '<span class="verified-badge">✓ Verified</span>' : ''}</div>
+      <div class="svc-meta">
+        <span class="svc-price">${gbp(s.price)}<small style="font-size:.7em;color:var(--gray-500)"> /${s.price_unit}</small></span>
+        <span class="svc-rating">★ ${Number(s.rating).toFixed(1)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Service Detail ────────────────────────────────────────────────────────────
+routes['service'] = async (id) => {
+  setMain(`<div class="detail-wrap"><div class="spinner dark" style="margin:60px auto;display:block"></div></div>`);
+  const s = await api('GET', `/services/${id}`).catch(() => null);
+  if (!s) { setMain(`<div class="empty"><div class="empty-icon">😕</div><p>Service not found.</p></div>`); return; }
+
+  setMain(`<div class="detail-wrap">
+    <div class="breadcrumb">
+      <span onclick="route('/')">Home</span> › <span onclick="route('/browse')">Browse</span> › ${s.category_name} › ${s.name}
+    </div>
+    <div class="detail-thumb">${s.category_icon}</div>
+    <div class="detail-header">
+      <div>
+        <div class="detail-title">${s.name}</div>
+        <div style="color:var(--gray-500);font-size:.9rem;margin-top:4px">${s.category_icon} ${s.category_name}</div>
+      </div>
+      <div>
+        <div class="detail-price">${gbp(s.price)}<span style="font-size:1rem;font-weight:400;color:var(--gray-500)"> /${s.price_unit}</span></div>
+        ${s.duration_min ? `<div style="color:var(--gray-500);font-size:.85rem;text-align:right">~${s.duration_min} min</div>` : ''}
+      </div>
+    </div>
+    <p style="color:var(--gray-700);margin-bottom:24px;line-height:1.7">${s.description || 'Professional service provided by a trusted vendor.'}</p>
+
+    <div class="vendor-strip">
+      <div class="vendor-avatar">${s.business_name[0]}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:1rem">${s.business_name}${s.is_verified ? ' <span class="verified-badge">✓ Verified</span>' : ''}</div>
+        <div style="color:var(--gray-500);font-size:.85rem">${s.city || ''}</div>
+        <div class="star-row">${stars(s.rating)} <span style="color:var(--gray-500);font-size:.85rem">${Number(s.rating).toFixed(1)} (${s.rating_count} reviews)</span></div>
+        <p style="font-size:.85rem;color:var(--gray-600);margin-top:4px">${s.vendor_description || ''}</p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" style="flex:1;min-width:200px;justify-content:center" onclick="bookService('${s.id}')">
+        📅 Book This Service
+      </button>
+      <button class="btn btn-ghost" onclick="route('/browse')">← Back to Browse</button>
+    </div>
+  </div>`);
+};
+
+window.bookService = (serviceId) => {
+  if (!state.user) { toast('Please sign in to book a service', 'error'); route('/login'); return; }
+  if (state.user.role === 'vendor') { toast('Vendors cannot place orders', 'error'); return; }
+  if (state.user.role === 'admin')  { toast('Admins cannot place orders', 'error'); return; }
+  state.cart = { serviceId };
+  route(`/checkout/${serviceId}`);
+};
+
+// ── Checkout ──────────────────────────────────────────────────────────────────
+routes['checkout'] = async (serviceId) => {
+  if (!reqAuth('user')) return;
+  const s = await api('GET', `/services/${serviceId}`).catch(() => null);
+  if (!s) { toast('Service not found', 'error'); route('/browse'); return; }
+
+  setMain(`<div class="checkout-grid">
+    <div>
+      <div class="section-title" style="margin-bottom:20px">Complete Your Booking</div>
+      <div class="sandbox-banner">🧪 <strong>Sandbox Mode</strong> — Use any card number. To simulate a decline, use a card ending in <strong>0000</strong>.</div>
+
+      <div class="card card-body" style="margin-bottom:20px">
+        <div style="font-weight:700;margin-bottom:16px">📅 Appointment Details</div>
+        <div class="form-group">
+          <label class="form-label">Preferred Date & Time</label>
+          <input type="datetime-local" id="schedDT" class="form-control" min="${new Date().toISOString().slice(0,16)}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Service Address</label>
+          <input type="text" id="address" class="form-control" placeholder="123 High Street, Edinburgh EH1 1AA">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes for Vendor (optional)</label>
+          <textarea id="notes" class="form-control" rows="2" placeholder="Any special instructions…"></textarea>
+        </div>
+      </div>
+
+      <div class="card card-body">
+        <div style="font-weight:700;margin-bottom:16px">💳 Payment Details</div>
+        <div class="form-group">
+          <label class="form-label">Cardholder Name</label>
+          <input type="text" id="cardName" class="form-control" placeholder="Full name on card">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Card Number</label>
+          <input type="text" id="cardNumber" class="form-control" placeholder="4242 4242 4242 4242" maxlength="19"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/(.{4})/g,'$1 ').trim()">
+        </div>
+        <div class="card-input-row">
+          <div class="form-group">
+            <label class="form-label">Expiry</label>
+            <input type="text" id="expiry" class="form-control" placeholder="MM/YY" maxlength="5"
+              oninput="this.value=this.value.replace(/[^0-9/]/g,'').replace(/^(\\d{2})(?!\\/)/, '$1/')">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVV</label>
+            <input type="text" id="cvv" class="form-control" placeholder="123" maxlength="4"
+              oninput="this.value=this.value.replace(/\\D/g,'')">
+          </div>
+        </div>
+        <div id="payError"></div>
+        <button class="btn btn-success" style="width:100%;justify-content:center" id="payBtn" onclick="submitPayment('${s.id}',${s.price})">
+          🔒 Pay ${gbp(s.price)} &amp; Confirm Booking
+        </button>
+      </div>
+    </div>
+
+    <div class="checkout-summary">
+      <div class="card card-body">
+        <div style="font-weight:700;margin-bottom:16px">Order Summary</div>
+        <div style="display:flex;gap:12px;margin-bottom:16px">
+          <div style="font-size:2rem">${s.category_icon}</div>
+          <div>
+            <div style="font-weight:600">${s.name}</div>
+            <div style="font-size:.85rem;color:var(--gray-500)">${s.business_name}</div>
+            <div style="font-size:.85rem;color:var(--gray-500)">${s.city || ''} ${s.is_verified ? '✓' : ''}</div>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--gray-100);margin:12px 0">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:.9rem">
+          <span>Service fee</span><span>${gbp(s.price)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:.9rem;color:var(--success)">
+          <span>Platform fee</span><span>Free</span>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--gray-100);margin:12px 0">
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem">
+          <span>Total</span><span>${gbp(s.price)}</span>
+        </div>
+        <div class="alert alert-info" style="margin-top:16px;font-size:.82rem">
+          Your card will be charged <strong>${gbp(s.price)}</strong> in sandbox mode. No real transaction occurs.
+        </div>
+      </div>
+    </div>
+  </div>`);
+};
+
+window.submitPayment = async (serviceId, price) => {
+  const cardName   = document.getElementById('cardName').value.trim();
+  const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+  const expiry     = document.getElementById('expiry').value.trim();
+  const cvv        = document.getElementById('cvv').value.trim();
+  const address    = document.getElementById('address').value.trim();
+  const notes      = document.getElementById('notes').value.trim();
+  const schedDT    = document.getElementById('schedDT').value;
+
+  if (!cardName || cardNumber.length < 12 || !expiry || !cvv) {
+    document.getElementById('payError').innerHTML = `<div class="alert alert-danger">Please fill in all card details.</div>`;
+    return;
+  }
+
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Processing…`;
+  document.getElementById('payError').innerHTML = '';
+
+  try {
+    // 1. Create order
+    const order = await api('POST', '/orders', {
+      service_id: serviceId, scheduled_at: schedDT || null, address, notes
+    });
+    // 2. Submit payment
+    const result = await api('POST', `/orders/${order.id}/payment`, {
+      card_name: cardName, card_number: cardNumber, expiry, cvv
+    });
+
+    // Success!
+    setMain(`<div class="payment-success">
+      <div class="checkmark">✅</div>
+      <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:8px">Booking Confirmed!</h2>
+      <p style="color:var(--gray-500);margin-bottom:24px">Your service has been booked and payment processed in sandbox mode.</p>
+      <div class="card" style="max-width:440px;margin:0 auto 24px;text-align:left">
+        <div class="card-body">
+          <div style="font-size:.85rem;color:var(--gray-500);margin-bottom:12px">BOOKING RECEIPT</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span>Reference</span><strong>${result.payment_ref}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span>Card</span><strong>•••• ${result.last4}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span>Amount</span><strong>${gbp(result.amount)}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>Status</span><span class="pill pill-paid">Paid (Sandbox)</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="route('/dashboard')">View My Bookings</button>
+        <button class="btn btn-ghost" onclick="route('/browse')">Browse More Services</button>
+      </div>
+    </div>`);
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = `🔒 Pay ${gbp(price)} &amp; Confirm Booking`;
+    const isDecline = err.data?.decline_code;
+    document.getElementById('payError').innerHTML = `<div class="alert alert-danger">
+      ${isDecline ? `💳 <strong>Card Declined:</strong> ${err.data.decline_code.replace(/_/g,' ')}. Try a different test card.` : `❌ ${err.message}`}
+    </div>`;
+  }
+};
+
+// ── User Dashboard ────────────────────────────────────────────────────────────
+routes['dashboard'] = async () => {
+  if (!reqAuth('user')) return;
+  await renderUserDash('orders');
+};
+
+async function renderUserDash(tab) {
+  const orders = await api('GET', '/orders');
+  setMain(`<div class="dash-grid">
+    <div class="dash-sidebar card card-body">
+      <div style="font-weight:700;margin-bottom:12px;padding:0 4px">👤 ${state.user.full_name}</div>
+      <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:16px;padding:0 4px">${state.user.email}</div>
+      <button class="dash-nav-item ${tab==='orders'?'active':''}" onclick="renderUserDash('orders')">📋 My Bookings</button>
+      <button class="dash-nav-item ${tab==='browse'?'active':''}" onclick="route('/browse')">🔍 Browse Services</button>
+      <button class="dash-nav-item" onclick="route('/')">🏠 Home</button>
+    </div>
+    <div class="dash-content">
+      <div class="section-title" style="margin-bottom:20px">My Bookings</div>
+      ${orders.length === 0 ? `<div class="empty"><div class="empty-icon">📋</div><p>No bookings yet.</p><button class="btn btn-primary" onclick="route('/browse')">Browse Services</button></div>`
+      : `<div class="table-wrap"><table>
+        <thead><tr><th>Service</th><th>Vendor</th><th>Date</th><th>Amount</th><th>Status</th><th>Payment</th><th></th></tr></thead>
+        <tbody>${orders.map(o => `<tr>
+          <td><strong>${o.service_name}</strong></td>
+          <td>${o.business_name}</td>
+          <td>${o.scheduled_at ? new Date(o.scheduled_at).toLocaleDateString() : ago(o.created_at)}</td>
+          <td>${gbp(o.total_price)}</td>
+          <td>${statusPill(o.status)}</td>
+          <td>${statusPill(o.payment_status)}</td>
+          <td>${['pending','confirmed'].includes(o.status) && o.payment_status === 'unpaid'
+            ? `<button class="btn btn-primary btn-sm" onclick="route('/checkout/${o.service_id}')">Pay</button>`
+            : ''}
+          ${o.status === 'pending' ? `<button class="btn btn-danger btn-sm" onclick="cancelOrder('${o.id}')">Cancel</button>` : ''}
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`}
+    </div>
+  </div>`);
+}
+
+window.cancelOrder = async (id) => {
+  if (!confirm('Cancel this booking?')) return;
+  try {
+    await api('DELETE', `/orders/${id}`);
+    toast('Order cancelled'); await renderUserDash('orders');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+// ── Vendor Dashboard ──────────────────────────────────────────────────────────
+routes['vendor'] = async () => {
+  if (!reqAuth('vendor')) return;
+  await renderVendorDash('overview');
+};
+
+async function renderVendorDash(tab) {
+  const [stats, orders, svcs, cats] = await Promise.all([
+    api('GET', '/vendors/me/stats'),
+    api('GET', '/vendors/me/orders'),
+    api('GET', '/vendors/me/services'),
+    api('GET', '/categories'),
+  ]);
+  const s = stats.stats;
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
+
+  const sidebar = `<div class="dash-sidebar card card-body">
+    <div style="font-weight:700;margin-bottom:4px;padding:0 4px">📊 Vendor Panel</div>
+    <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:16px;padding:0 4px">${stats.vendor.business_name}</div>
+    <button class="dash-nav-item ${tab==='overview'?'active':''}" onclick="renderVendorDash('overview')">🏠 Overview</button>
+    <button class="dash-nav-item ${tab==='services'?'active':''}" onclick="renderVendorDash('services')">🛠 My Services</button>
+    <button class="dash-nav-item ${tab==='orders'?'active':''}" onclick="renderVendorDash('orders')">📋 Received Orders</button>
+    <button class="dash-nav-item ${tab==='profile'?'active':''}" onclick="renderVendorDash('profile')">⚙️ Profile</button>
+  </div>`;
+
+  let content = '';
+
+  if (tab === 'overview') {
+    content = `
+      <div class="section-title" style="margin-bottom:20px">Overview</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value">${s.total_orders}</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue</div><div class="stat-value">${gbp(s.total_revenue || 0)}</div><div class="stat-sub">from paid orders</div></div>
+        <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value">${s.pending_count}</div></div>
+        <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value">${s.completed_count}</div></div>
+        <div class="stat-card"><div class="stat-label">Active Services</div><div class="stat-value">${stats.active_services}</div></div>
+        <div class="stat-card"><div class="stat-label">Rating</div><div class="stat-value" style="font-size:1.5rem">★ ${Number(stats.vendor.rating).toFixed(1)}</div><div class="stat-sub">${stats.vendor.rating_count} reviews</div></div>
+      </div>
+      <div class="section-title" style="font-size:1.1rem;margin-bottom:12px">Recent Orders</div>
+      ${orders.slice(0,5).length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Customer</th><th>Service</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>${orders.slice(0,5).map(o => `<tr>
+          <td>${o.customer_name}</td>
+          <td>${o.service_name}</td>
+          <td>${ago(o.created_at)}</td>
+          <td>${gbp(o.total_price)}</td>
+          <td>${statusPill(o.status)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>` : `<p style="color:var(--gray-500)">No orders yet. List your services to start receiving bookings.</p>`}`;
+  }
+
+  if (tab === 'services') {
+    content = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div class="section-title">My Services</div>
+        <button class="btn btn-primary btn-sm" onclick="showAddServiceModal()">+ Add Service</button>
+      </div>
+      ${!svcs.length ? `<div class="empty"><div class="empty-icon">🛠</div><p>No services yet.</p><button class="btn btn-primary" onclick="showAddServiceModal()">Add Your First Service</button></div>` :
+      `<div class="grid-2">${svcs.map(s => `
+        <div class="card card-body">
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div style="font-size:1.8rem">${catMap[s.category_id]?.icon || '🔧'}</div>
+            <div style="flex:1">
+              <div style="font-weight:700">${s.name}</div>
+              <div style="font-size:.8rem;color:var(--gray-500)">${catMap[s.category_id]?.name || ''}</div>
+            </div>
+            <span class="pill ${s.is_active ? 'pill-confirmed' : 'pill-cancelled'}">${s.is_active ? 'Active' : 'Inactive'}</span>
+          </div>
+          <div style="font-size:.85rem;color:var(--gray-600);margin-bottom:12px">${s.description || ''}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:700;color:var(--primary)">${gbp(s.price)} <small style="color:var(--gray-500)">/${s.price_unit}</small></span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-sm" onclick="showEditServiceModal(${JSON.stringify(s).replace(/"/g,'&quot;')})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="toggleService('${s.id}',${s.is_active})">${s.is_active ? 'Deactivate' : 'Activate'}</button>
+            </div>
+          </div>
+        </div>`).join('')}</div>`}
+      <div id="svcModal"></div>`;
+  }
+
+  if (tab === 'orders') {
+    content = `
+      <div class="section-title" style="margin-bottom:20px">Received Orders</div>
+      ${!orders.length ? `<div class="empty"><div class="empty-icon">📋</div><p>No orders received yet.</p></div>` :
+      `<div class="table-wrap"><table>
+        <thead><tr><th>Customer</th><th>Service</th><th>Scheduled</th><th>Address</th><th>Amount</th><th>Status</th><th>Payment</th><th>Action</th></tr></thead>
+        <tbody>${orders.map(o => `<tr>
+          <td><strong>${o.customer_name}</strong><br><small style="color:var(--gray-500)">${o.customer_email}</small></td>
+          <td>${o.service_name}</td>
+          <td>${o.scheduled_at ? new Date(o.scheduled_at).toLocaleDateString() : '—'}</td>
+          <td style="font-size:.82rem;max-width:160px">${o.address || '—'}</td>
+          <td>${gbp(o.total_price)}</td>
+          <td>${statusPill(o.status)}</td>
+          <td>${statusPill(o.payment_status)}</td>
+          <td>
+            ${o.status === 'pending'      ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','confirmed')">Confirm</button>` : ''}
+            ${o.status === 'confirmed'    ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','in_progress')">Start</button>` : ''}
+            ${o.status === 'in_progress'  ? `<button class="btn btn-success btn-sm" onclick="updateOrderStatus('${o.id}','completed')">Complete</button>` : ''}
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`}`;
+  }
+
+  if (tab === 'profile') {
+    const v = stats.vendor;
+    content = `
+      <div class="section-title" style="margin-bottom:20px">Vendor Profile</div>
+      <div class="card card-body" style="max-width:520px">
+        <div class="form-group">
+          <label class="form-label">Business Name</label>
+          <input id="vBiz" class="form-control" value="${v.business_name}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="vDesc" class="form-control" rows="3">${v.description || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input id="vCity" class="form-control" value="${v.city || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Primary Category</label>
+          <select id="vCat" class="form-control">
+            ${cats.map(c => `<option value="${c.id}" ${c.id === v.category_id ? 'selected' : ''}>${c.icon} ${c.name}</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveVendorProfile()">Save Changes</button>
+      </div>`;
+  }
+
+  setMain(`<div class="dash-grid">${sidebar}<div class="dash-content">${content}</div></div>`);
+
+  // expose cats for modals
+  window._cats = cats;
+}
+
+window.updateOrderStatus = async (id, status) => {
+  try {
+    await api('PUT', `/vendors/me/orders/${id}`, { status });
+    toast(`Order ${status}`); await renderVendorDash('orders');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.toggleService = async (id, current) => {
+  try {
+    await api('PUT', `/vendors/me/services/${id}`, { is_active: !current });
+    toast('Service updated'); await renderVendorDash('services');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.saveVendorProfile = async () => {
+  try {
+    await api('POST', '/vendors', {
+      business_name: document.getElementById('vBiz').value,
+      description:   document.getElementById('vDesc').value,
+      city:          document.getElementById('vCity').value,
+      category_id:   Number(document.getElementById('vCat').value),
+    });
+    toast('Profile updated', 'success'); await renderVendorDash('profile');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.showAddServiceModal = () => {
+  const cats = window._cats || [];
+  showModal(`
+    <div class="modal-title">➕ Add New Service</div>
+    <div class="form-group"><label class="form-label">Category</label>
+      <select id="mCat" class="form-control">${cats.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="form-label">Service Name</label><input id="mName" class="form-control" placeholder="e.g. Deep Home Clean"></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea id="mDesc" class="form-control" rows="2"></textarea></div>
+    <div class="card-input-row">
+      <div class="form-group"><label class="form-label">Price (£)</label><input id="mPrice" class="form-control" type="number" min="0" step="0.01"></div>
+      <div class="form-group"><label class="form-label">Unit</label>
+        <select id="mUnit" class="form-control"><option value="fixed">Fixed</option><option value="hourly">Hourly</option><option value="daily">Daily</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Duration (minutes, optional)</label><input id="mDur" class="form-control" type="number" min="0"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitAddService()">Add Service</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+};
+
+window.submitAddService = async () => {
+  try {
+    await api('POST', '/vendors/me/services', {
+      category_id:  Number(document.getElementById('mCat').value),
+      name:         document.getElementById('mName').value,
+      description:  document.getElementById('mDesc').value,
+      price:        Number(document.getElementById('mPrice').value),
+      price_unit:   document.getElementById('mUnit').value,
+      duration_min: document.getElementById('mDur').value ? Number(document.getElementById('mDur').value) : null,
+    });
+    closeModal(); toast('Service added', 'success'); await renderVendorDash('services');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.showEditServiceModal = (svc) => {
+  const cats = window._cats || [];
+  showModal(`
+    <div class="modal-title">✏️ Edit Service</div>
+    <div class="form-group"><label class="form-label">Category</label>
+      <select id="eCat" class="form-control">${cats.map(c => `<option value="${c.id}" ${c.id===svc.category_id?'selected':''}>${c.icon} ${c.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label class="form-label">Service Name</label><input id="eName" class="form-control" value="${svc.name}"></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea id="eDesc" class="form-control" rows="2">${svc.description||''}</textarea></div>
+    <div class="card-input-row">
+      <div class="form-group"><label class="form-label">Price (£)</label><input id="ePrice" class="form-control" type="number" value="${svc.price}"></div>
+      <div class="form-group"><label class="form-label">Unit</label>
+        <select id="eUnit" class="form-control">
+          <option value="fixed" ${svc.price_unit==='fixed'?'selected':''}>Fixed</option>
+          <option value="hourly" ${svc.price_unit==='hourly'?'selected':''}>Hourly</option>
+          <option value="daily" ${svc.price_unit==='daily'?'selected':''}>Daily</option>
+        </select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Duration (minutes)</label><input id="eDur" class="form-control" type="number" value="${svc.duration_min||''}"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitEditService('${svc.id}')">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>`);
+};
+
+window.submitEditService = async (id) => {
+  try {
+    await api('PUT', `/vendors/me/services/${id}`, {
+      category_id:  Number(document.getElementById('eCat').value),
+      name:         document.getElementById('eName').value,
+      description:  document.getElementById('eDesc').value,
+      price:        Number(document.getElementById('ePrice').value),
+      price_unit:   document.getElementById('eUnit').value,
+      duration_min: document.getElementById('eDur').value ? Number(document.getElementById('eDur').value) : null,
+    });
+    closeModal(); toast('Service updated', 'success'); await renderVendorDash('services');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+// ── Admin Dashboard ───────────────────────────────────────────────────────────
+routes['admin'] = async () => {
+  if (!reqAuth('admin')) return;
+  await renderAdminDash('overview');
+};
+
+async function renderAdminDash(tab) {
+  const [adminStats, users, allOrders] = await Promise.all([
+    api('GET', '/admin/stats'),
+    api('GET', '/admin/users'),
+    api('GET', '/admin/orders'),
+  ]);
+
+  const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+  const uByRole = {};
+  adminStats.users.forEach(r => uByRole[r.role] = r.cnt);
+
+  const sidebar = `<div class="dash-sidebar card card-body">
+    <div style="font-weight:700;margin-bottom:4px;padding:0 4px">⚙️ Admin Panel</div>
+    <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:16px;padding:0 4px">${state.user.email}</div>
+    <button class="dash-nav-item ${tab==='overview'?'active':''}" onclick="renderAdminDash('overview')">📊 Overview</button>
+    <button class="dash-nav-item ${tab==='users'?'active':''}" onclick="renderAdminDash('users')">👥 Users</button>
+    <button class="dash-nav-item ${tab==='orders'?'active':''}" onclick="renderAdminDash('orders')">📋 All Orders</button>
+  </div>`;
+
+  let content = '';
+
+  if (tab === 'overview') {
+    content = `
+      <div class="section-title" style="margin-bottom:20px">Platform Overview</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value">${users.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Vendors</div><div class="stat-value">${uByRole['vendor']||0}</div></div>
+        <div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value">${uByRole['user']||0}</div></div>
+        <div class="stat-card"><div class="stat-label">Active Services</div><div class="stat-value">${adminStats.services.cnt}</div></div>
+        <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value">${adminStats.orders.total}</div></div>
+        <div class="stat-card"><div class="stat-label">GMV</div><div class="stat-value" style="font-size:1.5rem">${gbp(adminStats.orders.revenue||0)}</div><div class="stat-sub">Gross Merchandise Value</div></div>
+      </div>
+      <div class="section-title" style="font-size:1.1rem;margin-bottom:12px">Recent Orders</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Customer</th><th>Service</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Payment</th></tr></thead>
+        <tbody>${allOrders.slice(0,8).map(o => `<tr>
+          <td>${o.customer_name}</td>
+          <td>${o.service_name}</td>
+          <td>${o.business_name}</td>
+          <td>${gbp(o.total_price)}</td>
+          <td>${statusPill(o.status)}</td>
+          <td>${statusPill(o.payment_status)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  if (tab === 'users') {
+    content = `
+      <div class="section-title" style="margin-bottom:20px">User Management</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Business</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+        <tbody>${users.map(u => `<tr>
+          <td><strong>${u.full_name}</strong></td>
+          <td style="font-size:.85rem">${u.email}</td>
+          <td><span class="role-badge ${u.role}">${u.role}</span></td>
+          <td>${u.business_name || '—'}</td>
+          <td>${u.is_active ? '<span class="pill pill-confirmed">Active</span>' : '<span class="pill pill-cancelled">Suspended</span>'}</td>
+          <td style="font-size:.82rem">${new Date(u.created_at).toLocaleDateString()}</td>
+          <td style="display:flex;gap:4px">
+            ${u.role !== 'admin' ? `
+              <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.id}',${u.is_active})">${u.is_active ? 'Suspend' : 'Activate'}</button>
+              <select onchange="setUserRole('${u.id}',this.value)" style="padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:.8rem">
+                <option value="user"   ${u.role==='user'   ?'selected':''}>User</option>
+                <option value="vendor" ${u.role==='vendor' ?'selected':''}>Vendor</option>
+                <option value="admin"  ${u.role==='admin'  ?'selected':''}>Admin</option>
+              </select>` : '<span style="color:var(--gray-400)">—</span>'}
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  if (tab === 'orders') {
+    content = `
+      <div class="section-title" style="margin-bottom:20px">All Orders</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Ref</th><th>Customer</th><th>Service</th><th>Vendor</th><th>Amount</th><th>Status</th><th>Payment Ref</th></tr></thead>
+        <tbody>${allOrders.map(o => `<tr>
+          <td style="font-family:monospace;font-size:.78rem">${o.id.slice(0,8)}</td>
+          <td>${o.customer_name}</td>
+          <td>${o.service_name}</td>
+          <td>${o.business_name}</td>
+          <td>${gbp(o.total_price)}</td>
+          <td>${statusPill(o.status)}</td>
+          <td style="font-size:.78rem;font-family:monospace">${o.payment_ref || '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  setMain(`<div class="dash-grid">${sidebar}<div class="dash-content">${content}</div></div>`);
+}
+
+window.toggleUserActive = async (id, current) => {
+  try {
+    await api('PUT', `/admin/users/${id}`, { is_active: !current });
+    toast('User updated'); await renderAdminDash('users');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.setUserRole = async (id, role) => {
+  try {
+    await api('PUT', `/admin/users/${id}`, { role });
+    toast(`Role updated to ${role}`, 'success');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+// ── Auth Forms ────────────────────────────────────────────────────────────────
+routes['login'] = () => {
+  if (state.user) { route('/'); return; }
+  setMain(`<div class="auth-wrap">
+    <div class="card card-body">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:2rem;margin-bottom:8px">👋</div>
+        <h2 style="font-size:1.4rem;font-weight:800">Welcome Back</h2>
+        <p style="color:var(--gray-500);font-size:.9rem">Sign in to your ServeHub account</p>
+      </div>
+      <div id="loginErr"></div>
+      <div class="form-group"><label class="form-label">Email</label><input id="lEmail" class="form-control" type="email" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="form-label">Password</label><input id="lPass" class="form-control" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitLogin()"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" id="loginBtn" onclick="submitLogin()">Sign In</button>
+      <div style="text-align:center;margin-top:16px;font-size:.88rem;color:var(--gray-500)">
+        Don't have an account? <a href="#" onclick="route('/register')">Register here</a>
+      </div>
+      <div class="alert alert-info" style="margin-top:16px;font-size:.8rem">
+        <div><strong>Demo accounts:</strong></div>
+        <div>Admin: admin@marketplace.com / Admin@123</div>
+        <div>User: alice@example.com / User@123</div>
+        <div>Vendor: sparkle@vendor.com / Vendor@123</div>
+      </div>
+    </div>
+  </div>`);
+};
+
+window.submitLogin = async () => {
+  const email = document.getElementById('lEmail').value;
+  const pass  = document.getElementById('lPass').value;
+  const btn   = document.getElementById('loginBtn');
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Signing in…`;
+  document.getElementById('loginErr').innerHTML = '';
+  try {
+    const res = await api('POST', '/auth/login', { email, password: pass });
+    state.token = res.token; state.user = res.user;
+    localStorage.setItem('token', res.token);
+    localStorage.setItem('user', JSON.stringify(res.user));
+    toast(`Welcome back, ${res.user.full_name.split(' ')[0]}!`, 'success');
+    if (res.user.role === 'admin')  route('/admin');
+    else if (res.user.role === 'vendor') route('/vendor');
+    else route('/dashboard');
+  } catch (e) {
+    document.getElementById('loginErr').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    btn.disabled = false; btn.innerHTML = 'Sign In';
+  }
+};
+
+routes['register'] = () => {
+  if (state.user) { route('/'); return; }
+  setMain(`<div class="auth-wrap">
+    <div class="card card-body">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:2rem;margin-bottom:8px">🎉</div>
+        <h2 style="font-size:1.4rem;font-weight:800">Create Account</h2>
+        <p style="color:var(--gray-500);font-size:.9rem">Join ServeHub as a customer or service provider</p>
+      </div>
+      <div id="regErr"></div>
+      <div class="form-group"><label class="form-label">Full Name</label><input id="rName" class="form-control" placeholder="Your full name"></div>
+      <div class="form-group"><label class="form-label">Email</label><input id="rEmail" class="form-control" type="email" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="form-label">Phone (optional)</label><input id="rPhone" class="form-control" type="tel" placeholder="+44 7700 900000"></div>
+      <div class="form-group"><label class="form-label">Password</label><input id="rPass" class="form-control" type="password" placeholder="At least 8 characters"></div>
+      <div class="form-group">
+        <label class="form-label">I am joining as</label>
+        <select id="rRole" class="form-control">
+          <option value="user">Customer — I want to book services</option>
+          <option value="vendor">Service Provider — I want to list my services</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" id="regBtn" onclick="submitRegister()">Create Account</button>
+      <div style="text-align:center;margin-top:16px;font-size:.88rem;color:var(--gray-500)">
+        Already have an account? <a href="#" onclick="route('/login')">Sign in</a>
+      </div>
+    </div>
+  </div>`);
+};
+
+window.submitRegister = async () => {
+  const full_name = document.getElementById('rName').value.trim();
+  const email     = document.getElementById('rEmail').value.trim();
+  const phone     = document.getElementById('rPhone').value.trim();
+  const password  = document.getElementById('rPass').value;
+  const role      = document.getElementById('rRole').value;
+
+  if (!full_name || !email || !password) {
+    document.getElementById('regErr').innerHTML = `<div class="alert alert-danger">Name, email and password are required.</div>`;
+    return;
+  }
+  const btn = document.getElementById('regBtn');
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Creating…`;
+  try {
+    const res = await api('POST', '/auth/register', { email, password, full_name, phone, role });
+    state.token = res.token; state.user = res.user;
+    localStorage.setItem('token', res.token);
+    localStorage.setItem('user', JSON.stringify(res.user));
+    toast(`Account created! Welcome, ${res.user.full_name.split(' ')[0]}!`, 'success');
+    if (res.user.role === 'vendor') {
+      // Redirect vendor to set up their profile
+      route('/vendor');
+    } else {
+      route('/browse');
+    }
+  } catch (e) {
+    document.getElementById('regErr').innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+    btn.disabled = false; btn.innerHTML = 'Create Account';
+  }
+};
+
+// ── 404 ───────────────────────────────────────────────────────────────────────
+routes['404'] = () => {
+  setMain(`<div class="empty" style="margin-top:60px">
+    <div class="empty-icon">😕</div>
+    <h2 style="margin-bottom:8px">Page Not Found</h2>
+    <p>That page doesn't exist.</p>
+    <button class="btn btn-primary" onclick="route('/')">Go Home</button>
+  </div>`);
+};
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function showModal(html) {
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+      <div class="modal">${html}</div>
+    </div>`);
+}
+function closeModal() {
+  document.getElementById('modalBackdrop')?.remove();
+}
+window.showModal = showModal;
+window.closeModal = closeModal;
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+route(location.pathname + location.search, false);
+</script>
+</body>
+</html>

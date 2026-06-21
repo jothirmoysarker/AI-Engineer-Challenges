@@ -1,0 +1,11 @@
+Role     Email                   Password
+
+Admin  - admin@marketplace.com - Admin@123
+
+Vendor - sparkle@vendor.com    - Vendor@123
+
+Vendor - techfix@vendor.com    - Vendor@123
+
+User   - alice@example.com     - User@123
+
+User   - sarker@gmail.com      - 12345678
