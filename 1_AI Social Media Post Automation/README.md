@@ -1,2 +1,11 @@
 # AI Agent Workflow Automation
 <img src="1_AI Social Media Post Automation.png" width="800">
+
+## 1. How we keep captions between 90 and 150 words
+Instead of just asking the AI to write within a word range and hoping for the best, we built in a check and retry system. First, the prompt tells the AI clearly: "write between 90 and 150 words, count carefully." But here's the key part, we don't just trust the AI to get it right. A separate step actually counts the words in the caption it sent back. If the count is outside the range, the workflow sends it back to the AI to try again, fresh. It never just chops off extra words at the end, because that would cut sentences off mid-thought and look broken. To avoid getting stuck in an endless loop if the AI keeps missing the target, we cap it at 3 tries after that, it moves forward anyway with the best version it has.
+
+## 2. How the logo and title get placed on the image
+This part might surprise you. We're not manually placing the logo and text at exact pixel coordinates like you would in Photoshop. Instead, we describe where things should go in plain instructions inside the prompt itself, like "put the logo in the top-right corner" and "put the title in the lower-middle area." We send the logo image along as a reference, and the AI image tool places everything based on those instructions. Since image generation takes a few seconds, the workflow checks in periodically ("is it done yet? not yet? check again") until the image is ready, then grabs the result. There's also a built-in edit step, so if the placement isn't quite right, a person can leave feedback and the image gets regenerated with that feedback applied.
+
+## 3. How the human approval step pauses and resumes
+This is the part that lets a real person review the post before it goes live. When the workflow reaches the approval step, it sends a message to Slack with Approve and Decline buttons, and then it actually waits. It's not sitting there using up resources while it waits; it just goes quiet until someone responds. Whenever a teammate taps a button in Slack, that click wakes the workflow back up exactly where it left off, and it knows whether to move forward, send it back for changes, or stop. If nobody responds in time, there's also a built-in timeout path so the workflow doesn't hang forever.
