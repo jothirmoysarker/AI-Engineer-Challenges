@@ -1,4 +1,4 @@
-# ServeHub — Technical Explanation
+# ServeHub Technical Explanation
 
 ## 1. Engineering Workflow: AI-Directed Development
 
@@ -8,7 +8,7 @@ The build was driven by a single high-level specification prompt, deliberately w
 
 > *"Build the core backend, frontend, and database functionality of a multi-vendor service marketplace... supporting three distinct system roles: Admin, Vendor, and End-User... a complete checkout journey passing through a mock payment gateway operating inside a sandbox/test environment."*
 
-This pattern — stating **what** the system must do, not **how** — is intentional. It leaves the AI free to select appropriate primitives (Express, JWT, bcrypt, sql.js) and architecture (SPA with hash routing, synchronous DB wrapper) without being anchored to a prescriptive tech stack that might not resolve cleanly in the target environment.
+This pattern stating **what** the system must do, not **how** is intentional. It leaves the AI free to select appropriate primitives (Express, JWT, bcrypt, sql.js) and architecture (SPA with hash routing, synchronous DB wrapper) without being anchored to a prescriptive tech stack that might not resolve cleanly in the target environment.
 
 Subsequent prompts were **diagnostic, not instructional**. Rather than saying "fix the database", the intervention was: "here is the error output — what is happening?" This keeps the AI in a reasoning loop rather than a guess-and-patch loop.
 
@@ -165,18 +165,6 @@ The database uses five tables with the following structure:
                               └──────────────┘
 ```
 
-### Key Design Decisions
-
-**UUIDs not auto-increment integers for application PKs.** `users`, `vendors`, `services`, and `orders` all use UUID v4 string PKs. This avoids leaking sequential IDs in URLs (which would expose record counts and allow enumeration attacks), and means IDs can be generated client-side or in seed scripts without a round-trip to the database.
-
-**`vendor_id` denormalised onto `orders`.** Even though `vendor_id` is derivable via `orders.service_id → services.vendor_id`, it is stored directly on `orders`. This means vendor dashboard queries (`WHERE vendor_id = ?`) require no join and cannot be broken if a service is reassigned.
-
-**`total_price` snapshotted at order creation.** The price on the order record is copied from the service at the moment of booking. If the vendor subsequently edits the service price, existing orders retain their original agreed price — correct commercial behaviour.
-
-**Soft-delete for services.** `services.is_active = 0` deactivates a listing without deleting the row. Active orders referencing that service remain intact and queryable; historical order records are not orphaned.
-
-**No foreign key enforcement.** sql.js supports `PRAGMA foreign_keys = ON` but it was not enabled here. Referential integrity is maintained at the application layer (the API validates `service_id` exists before creating an order, etc.). This is a known trade-off for a prototype — production would enable `PRAGMA foreign_keys = ON`.
-
 ---
 
 ## 3. State Management & Route Protection
@@ -322,7 +310,7 @@ if (req.user.role !== 'admin'
 }
 ```
 
-Similarly, `PUT /api/vendors/me/services/:id` first looks up the vendor by `user_id = req.user.id`, then verifies the service's `vendor_id` matches — a vendor cannot edit another vendor's service even if they know the service UUID.
+Similarly, `PUT /api/vendors/me/services/:id` first looks up the vendor by `user_id = req.user.id`, then verifies the service's `vendor_id` matches a vendor cannot edit another vendor's service even if they know the service UUID.
 
 ### Mock Payment Gateway
 
