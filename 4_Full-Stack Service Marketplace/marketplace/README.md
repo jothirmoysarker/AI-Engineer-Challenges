@@ -1,4 +1,4 @@
-# ServeHub — Multi-Vendor Service Marketplace
+# ServeHub Multi-Vendor Service Marketplace
 
 A full-stack service marketplace platform where customers can browse and book local services, vendors manage their listings and orders, and admins oversee the platform.
 
