@@ -1,5 +1,7 @@
 # IoT Sensor Data Trend Prediction
 
+Demo Video: https://www.loom.com/share/e675bc7f404d4fbba634d6e5606a306e
+
 ## 1. What the dataset is about and what we're trying to predict
 This dataset comes from Microsoft, and it's built to simulate something real factories deal with every day: keeping machines running without surprise breakdowns. It tracks 100 industrial machines over the course of a full year (2015), recording hourly readings like voltage, rotation speed, pressure, and vibration. On top of that, it logs error events, records of when parts were swapped out, and actual failure events across four different machine components. Worth being upfront about. This is a simulated dataset Microsoft built for teaching purposes, not raw factory floor data. That's completely normal for a learning project like this and doesn't make the exercise any less valid.
 So what are we actually predicting? For every machine, every hour, the question is simple: is this machine going to break down in the next 24 hours, yes or no? We deliberately didn't try to predict the actual sensor readings going forward, because breakdowns don't follow a smooth pattern, they happen suddenly. And we picked a 24-hour window on purpose: any shorter, and a maintenance team wouldn't have enough warning to actually do anything about it. Any longer, and the prediction gets too vague to trust.
