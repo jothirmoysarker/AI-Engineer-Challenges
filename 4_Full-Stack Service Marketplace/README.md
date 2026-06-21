@@ -1,5 +1,7 @@
 # ServeHub Technical Explanation
 
+Demo Video: https://www.loom.com/share/52a6caa58f59450dafb4a3876570d943
+
 ## 1. Engineering Workflow: AI-Directed Development
 
 ### Prompt Structure
