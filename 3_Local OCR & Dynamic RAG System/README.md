@@ -2,7 +2,7 @@
 
 A fully local, secure document processing and Retrieval-Augmented Generation (RAG) system that handles Bangla, English, and mixed-language documents. No data is sent to any external API everything runs on your machine.
 
-
+Demo Video: https://www.loom.com/share/d57d326eee76450183557ea90b5e1776
 
 ---
 
