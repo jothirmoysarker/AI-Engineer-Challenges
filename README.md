@@ -1,4 +1,4 @@
-﻿# AI-Engineer-Technical-Assessment
+﻿# AI-Engineer-Challenges
 
 ## Assessment 1: AI Agent Workflow Automation
 Demo Video: https://www.loom.com/share/42c4f3ceb0c24e4691cda3c5ced993b6
